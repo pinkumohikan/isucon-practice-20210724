@@ -56,11 +56,13 @@ type Entry struct {
 }
 
 type Comment struct {
-	ID        int
-	EntryID   int
-	UserID    int
-	Comment   string
-	CreatedAt time.Time
+	ID          int
+	EntryID     int
+	UserID      int
+	AccountName string
+	NickName    string
+	Comment     string
+	CreatedAt   time.Time
 }
 
 type Friend struct {
@@ -410,7 +412,13 @@ LIMIT 10`, user.ID)
 	rows.Close()
 
 	// TODO １０件しか取らないようにする
-	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 500`, friendIds)
+	sqlIn, params, err = sqlx.In(`
+SELECT c.*, cu.account_name, cu.nick_name
+FROM comments AS c
+INNER JOIN users AS cu ON cu.id = c.user_id
+WHERE c.user_id IN (?)
+ORDER BY c.created_at
+DESC LIMIT 500`, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -422,7 +430,7 @@ LIMIT 10`, user.ID)
 	commentsOfFriends := make([]Comment, 0, 10)
 	for rows.Next() {
 		c := Comment{}
-		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
+		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
 		row := db.QueryRow(`SELECT id,user_id,private,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
 		var body string
