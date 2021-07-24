@@ -383,7 +383,7 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 
-	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
 		fmt.Println("---entries----")
 		fmt.Println(err)
@@ -399,10 +399,10 @@ LIMIT 10`, user.ID)
 	entriesOfFriends := make([]Entry, 0, 10)
 	for rows.Next() {
 		var id, userID, private int
-		var body, title, firstRow string
+		var title, firstRow string
 		var createdAt time.Time
 
-		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &createdAt))
 
 		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, title, firstRow, createdAt})
 		if len(entriesOfFriends) >= 10 {
@@ -431,11 +431,11 @@ DESC LIMIT 15`, friendIds)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
-		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE id = ?`, c.EntryID)
+		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,created_at FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
-		var body, title, firstRow string
+		var title, firstRow string
 		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
+		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &createdAt))
 		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		if entry.Private {
 			if !permitted(w, r, entry.UserID) {
