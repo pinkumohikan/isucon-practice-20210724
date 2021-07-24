@@ -76,10 +76,12 @@ type Relation struct {
 }
 
 type Footprint struct {
-	UserID    int
-	OwnerID   int
-	CreatedAt time.Time
-	Updated   time.Time
+	UserID           int
+	OwnerID          int
+	OwnerAccountName string
+	OwnerNickName    string
+	CreatedAt        time.Time
+	Updated          time.Time
 }
 
 var prefs = []string{"未入力",
@@ -438,7 +440,7 @@ LIMIT 10`, user.ID)
 		}
 	}
 	rows.Close()
-	
+
 	friendsMap := make(map[int]time.Time)
 	for _, relation := range relationsAnother {
 		if _, ok := friendsMap[relation.One]; !ok {
@@ -457,11 +459,13 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
-FROM footprints
-WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
-ORDER BY updated DESC
+	rows, err = db.Query(`
+SELECT o.account_name, o.nick_name, DATE(f.created_at) AS date
+FROM footprints AS f
+INNER JOIN users AS o ON o.id = f.owner_id
+WHERE f.user_id = ?
+GROUP BY f.user_id, f.owner_id, date
+ORDER BY MAX(f.created_at) DESC
 LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
@@ -469,7 +473,7 @@ LIMIT 10`, user.ID)
 	footprints := make([]Footprint, 0, 10)
 	for rows.Next() {
 		fp := Footprint{}
-		checkErr(rows.Scan(&fp.UserID, &fp.OwnerID, &fp.CreatedAt, &fp.Updated))
+		checkErr(rows.Scan(&fp.OwnerAccountName, &fp.OwnerNickName, &fp.CreatedAt))
 		footprints = append(footprints, fp)
 	}
 	rows.Close()
