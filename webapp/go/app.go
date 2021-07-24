@@ -65,6 +65,13 @@ type Friend struct {
 	CreatedAt time.Time
 }
 
+type Relation struct {
+	ID int
+	One int
+	Another int
+	CreatedAt time.Time
+}
+
 type Footprint struct {
 	UserID    int
 	OwnerID   int
@@ -321,6 +328,34 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	rows.Close()
 
+	// 友達のID一覧を作る
+	relationsOne :=  []Relation{}
+	relationsAnother :=  []Relation{}
+	err = db.Select(relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
+	if err != nil {
+		checkErr(err)
+	}
+	err = db.Select(relationsAnother, `SELECT * FROM another WHERE one = ?`, user.ID)
+	if err != nil {
+		checkErr(err)
+	}
+	friendIdUnique := make(map[int]struct{})
+	var friendIds []interface{}
+	for _, i := range relationsOne {
+		id := i.Another
+		if _, ok := friendIdUnique[id]; !ok {
+			friendIds = append(friendIds, id)
+			friendIdUnique[id] = struct{}{}
+		}
+	}
+	for _, i := range relationsAnother {
+		id := i.One
+		if _, ok := friendIdUnique[id]; !ok {
+			friendIds = append(friendIds, id)
+			friendIdUnique[id] = struct{}{}
+		}
+	}
+
 	rows, err = db.Query(`SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
 FROM comments c
 JOIN entries e ON c.entry_id = e.id
@@ -337,13 +372,11 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 
-	rows, err = db.Query(`SELECT * FROM (
-    	(SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.another WHERE r.another = ? GROUP BY e.id ORDER BY e.id DESC LIMIT 20) 
-    	UNION 
-    	(SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.one WHERE r.one = ? GROUP BY e.id ORDER BY e.id DESC LIMIT 20)) AS ue 
-		GROUP BY ue.id ORDER BY ue.id DESC LIMIT 10`,
-	user.ID,
-	user.ID)
+	sqlIn, params, err := sqlx.In(`SELECT * FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	if err != nil {
+		checkErr(err)
+	}
+	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -360,7 +393,8 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000`)
+	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY id DESC LIMIT 100`, friendIds)
+	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -368,9 +402,6 @@ LIMIT 10`, user.ID)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
-		if !isFriend(w, r, c.UserID) {
-			continue
-		}
 		row := db.QueryRow(`SELECT * FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
 		var body string
