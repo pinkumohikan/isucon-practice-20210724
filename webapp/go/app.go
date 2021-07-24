@@ -70,7 +70,7 @@ type Relation struct {
 	ID int
 	One int
 	Another int
-	CreatedAt time.Time
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type Footprint struct {
