@@ -751,6 +751,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %s.", err.Error())
 	}
+
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(100)
+	db.SetConnMaxLifetime(120 * time.Second)
+
 	defer db.Close()
 
 	store = sessions.NewCookieStore([]byte(ssecret))
