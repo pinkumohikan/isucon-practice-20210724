@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -25,9 +26,10 @@ import (
 )
 
 var (
-	db    *sqlx.DB
-	store *sessions.CookieStore
-	userMap map[int]User
+	db          *sqlx.DB
+	store       *sessions.CookieStore
+	userMap     = map[int]User{}
+	userMapLock = sync.RWMutex{}
 )
 
 type User struct {
@@ -149,9 +151,12 @@ func authenticated(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func getUser(w http.ResponseWriter, userID int) *User {
+	userMapLock.RLock()
 	if u, ok := userMap[userID]; ok {
+		userMapLock.RUnlock()
 		return &u
 	}
+	userMapLock.RUnlock()
 
 	row := db.QueryRow(`SELECT * FROM users WHERE id = ?`, userID)
 	user := User{}
@@ -161,7 +166,9 @@ func getUser(w http.ResponseWriter, userID int) *User {
 	}
 	checkErr(err)
 
+	userMapLock.Lock()
 	userMap[userID] = user
+	userMapLock.Unlock()
 	return &user
 }
 
@@ -789,6 +796,9 @@ func GetInitialize(w http.ResponseWriter, r *http.Request) {
 }
 
 func setupUsers() {
+	userMapLock.Lock()
+	defer userMapLock.Unlock()
+
 	userMap = map[int]User{}
 
 	var users []User
