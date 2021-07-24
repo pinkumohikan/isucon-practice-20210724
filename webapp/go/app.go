@@ -418,7 +418,7 @@ FROM comments AS c
 INNER JOIN users AS cu ON cu.id = c.user_id
 WHERE c.user_id IN (?)
 ORDER BY c.created_at
-DESC LIMIT 500`, friendIds)
+DESC LIMIT 15`, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
