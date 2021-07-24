@@ -408,7 +408,8 @@ LIMIT 10`, user.ID)
 	rows.Close()
 
 	// TODO １０件しか取らないようにする
-	sqlIn, params, err = sqlx.In(`SELECT * FROM comments c
+	sqlIn, params, err = sqlx.In(`SELECT c.*, cu.account_name, cu.nick_name FROM comments c
+    INNER JOIN users AS cu ON cu.id = c.user_id
     JOIN entries e ON c.entry_id = e.id
  	WHERE c.user_id IN (?)
 	AND (
@@ -427,6 +428,7 @@ LIMIT 10`, user.ID)
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
 		commentsOfFriends = append(commentsOfFriends, c)
 	}
+	rows.Close()
 
 	friendsMap := make(map[int]time.Time)
 	for _, relation := range relationsAnother {
