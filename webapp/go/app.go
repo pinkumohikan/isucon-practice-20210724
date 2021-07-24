@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"path"
 	"runtime"
@@ -820,12 +819,7 @@ func main() {
 	store = sessions.NewCookieStore([]byte(ssecret))
 
 	r := mux.NewRouter()
-
-	http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
-	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
-	}()
-
+	
 	l := r.Path("/login").Subrouter()
 	l.Methods("GET").HandlerFunc(myHandler(GetLogin))
 	l.Methods("POST").HandlerFunc(myHandler(PostLogin))
