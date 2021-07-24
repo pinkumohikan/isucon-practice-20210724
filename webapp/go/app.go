@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/jmoiron/sqlx"
 	"errors"
 	"html/template"
 	"log"
@@ -19,7 +21,6 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 )
 
 var (
@@ -64,6 +65,13 @@ type Comment struct {
 type Friend struct {
 	ID        int
 	CreatedAt time.Time
+}
+
+type Relation struct {
+	ID int
+	One int
+	Another int
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type Footprint struct {
@@ -322,6 +330,38 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	rows.Close()
 
+	// 友達のID一覧を作る
+	var relationsOne []Relation
+	var relationsAnother []Relation
+	err = db.Select(&relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
+	if err != nil {
+		fmt.Println("---oen-----")
+		fmt.Println(err)
+		checkErr(err)
+	}
+	err = db.Select(&relationsAnother, `SELECT * FROM relations WHERE another = ?`, user.ID)
+	if err != nil {
+		fmt.Println("---another----")
+		fmt.Println(err)
+		checkErr(err)
+	}
+	friendIdUnique := make(map[int]struct{})
+	var friendIds []interface{}
+	for _, i := range relationsOne {
+		id := i.Another
+		if _, ok := friendIdUnique[id]; !ok {
+			friendIds = append(friendIds, id)
+			friendIdUnique[id] = struct{}{}
+		}
+	}
+	for _, i := range relationsAnother {
+		id := i.One
+		if _, ok := friendIdUnique[id]; !ok {
+			friendIds = append(friendIds, id)
+			friendIdUnique[id] = struct{}{}
+		}
+	}
+
 	rows, err = db.Query(`SELECT c.id AS id, c.entry_id AS entry_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at
 FROM comments c
 JOIN entries e ON c.entry_id = e.id
@@ -337,10 +377,18 @@ LIMIT 10`, user.ID)
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
 		commentsForMe = append(commentsForMe, c)
 	}
-	rows.Close()
 
-	rows, err = db.Query(`SELECT id,user_id,private,body,created_at FROM entries ORDER BY created_at DESC LIMIT 1000`)
+	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	if err != nil {
+		fmt.Println("---entries----")
+		fmt.Println(err)
+		checkErr(err)
+	}
+	rows, err = db.Query(sqlIn, params...)
+
 	if err != sql.ErrNoRows {
+		fmt.Println("---entries sql----")
+		fmt.Println(err)
 		checkErr(err)
 	}
 	entriesOfFriends := make([]Entry, 0, 10)
@@ -349,9 +397,6 @@ LIMIT 10`, user.ID)
 		var body string
 		var createdAt time.Time
 		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		if !isFriend(w, r, userID) {
-			continue
-		}
 		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt})
 		if len(entriesOfFriends) >= 10 {
 			break
@@ -359,18 +404,21 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000`)
+	// TODO １０件しか取らないようにする
+	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 500`, friendIds)
+	if err != nil {
+		fmt.Println(err)
+	}
+	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
+		fmt.Println(err)
 		checkErr(err)
 	}
 	commentsOfFriends := make([]Comment, 0, 10)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
-		if !isFriend(w, r, c.UserID) {
-			continue
-		}
-		row := db.QueryRow(`SELECT id,user_id,private,body,created_at FROM entries WHERE id = ?`, c.EntryID)
+		row := db.QueryRow(`SELECT id,user_id,private,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
 		var body string
 		var createdAt time.Time
