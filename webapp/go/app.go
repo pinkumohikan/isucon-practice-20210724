@@ -339,7 +339,7 @@ LIMIT 10`, user.ID)
 	rows.Close()
 	session := getSession(w, r)
 	id := session.Values["user_id"]
-	rows, err = db.Query(`SELECT * FROM (SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.another WHERE r.another = ? ORDER BY created_at DESC LIMIT 10 UNION SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.one WHERE r.one = ? ORDER BY created_at DESC LIMIT 10) AS ue ORDER BY created_at DESC LIMIT 10 `, id, id)
+	rows, err = db.Query(`SELECT * FROM ((SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.another WHERE r.another = ? GROUP BY e.id ORDER BY e.id DESC LIMIT 20) UNION  (SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.one WHERE r.one = ? GROUP BY e.id ORDER BY e.id DESC LIMIT 20)) AS ue GROUP BY ue.id ORDER BY ue.id DESC LIMIT 10`, id, id)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
