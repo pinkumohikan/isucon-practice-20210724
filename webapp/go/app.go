@@ -337,8 +337,9 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 	rows.Close()
-
-	rows, err = db.Query(`SELECT * FROM entries ORDER BY created_at DESC LIMIT 1000`)
+	session := getSession(w, r)
+	id := session.Values["user_id"]
+	rows, err = db.Query(`SELECT * FROM (SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.another WHERE r.another = ? UNION SELECT e.* FROM entries AS e JOIN relations AS r on e.user_id = r.one WHERE r.one = ?) AS ue LIMIT 10`, id, id)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
