@@ -334,13 +334,13 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	var relationsAnother []Relation
 	err = db.Select(&relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
 	if err != nil {
-		fmt.Println("ここまで来た1")
+		fmt.Println("---oen-----")
 		fmt.Println(err)
 		checkErr(err)
 	}
 	err = db.Select(&relationsAnother, `SELECT * FROM relations WHERE another = ?`, user.ID)
 	if err != nil {
-		fmt.Println("ここまで来た2")
+		fmt.Println("---another----")
 		fmt.Println(err)
 		checkErr(err)
 	}
@@ -368,7 +368,6 @@ WHERE e.user_id = ?
 ORDER BY c.created_at DESC
 LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
-		fmt.Println(err)
 		checkErr(err)
 	}
 	commentsForMe := make([]Comment, 0, 10)
@@ -380,11 +379,13 @@ LIMIT 10`, user.ID)
 
 	sqlIn, params, err := sqlx.In(`SELECT * FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
+		fmt.Println("---entries----")
 		fmt.Println(err)
 		checkErr(err)
 	}
 	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
+		fmt.Println("---entries sql----")
 		fmt.Println(err)
 		checkErr(err)
 	}
@@ -401,9 +402,9 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY id DESC LIMIT 100`, friendIds)
-	rows, err = db.Query(sqlIn, params...)
+	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000`)
 	if err != sql.ErrNoRows {
+		fmt.Println("---comments----")
 		fmt.Println(err)
 		checkErr(err)
 	}
