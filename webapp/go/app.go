@@ -402,7 +402,12 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000`)
+	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 500`, friendIds)
+	if err != nil {
+		fmt.Println("---comments----")
+		fmt.Println(err)
+	}
+	rows, err = db.Query(sqlIn, params)
 	if err != sql.ErrNoRows {
 		fmt.Println("---comments----")
 		fmt.Println(err)
