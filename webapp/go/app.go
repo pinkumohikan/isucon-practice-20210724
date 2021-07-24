@@ -438,8 +438,10 @@ DESC LIMIT 500`, friendIds)
 		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
 		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		if entry.Private {
-			if !permitted(w, r, entry.UserID) {
-				continue
+			if userID != user.ID  {
+				if _, ok := friendIdUnique[userID]; !ok {
+					continue
+				}
 			}
 		}
 		commentsOfFriends = append(commentsOfFriends, c)
