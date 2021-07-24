@@ -24,4 +24,4 @@ kataribe:
 	sudo cat /var/log/nginx/access.log | ./kataribe
 
 bench:
-	cd ../ & sh bench.sh
+	cd ../ && sh bench.sh
