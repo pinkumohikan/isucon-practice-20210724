@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"errors"
 	"html/template"
 	"log"
@@ -21,7 +23,7 @@ import (
 )
 
 var (
-	db    *sql.DB
+	db    *sqlx.DB
 	store *sessions.CookieStore
 )
 
@@ -748,7 +750,7 @@ func main() {
 		ssecret = "beermoris"
 	}
 
-	db, err = sql.Open("mysql", user+":"+password+"@tcp("+host+":"+strconv.Itoa(port)+")/"+dbname+"?loc=Local&parseTime=true&interpolateParams=true")
+	db, err = sqlx.Open("mysql", user+":"+password+"@tcp("+host+":"+strconv.Itoa(port)+")/"+dbname+"?loc=Local&parseTime=true&interpolateParams=true")
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %s.", err.Error())
 	}
