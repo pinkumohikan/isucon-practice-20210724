@@ -6,13 +6,14 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-	_ "net/http/pprof"
+
 	"github.com/felixge/fgprof"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/context"
@@ -386,7 +387,7 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC`, user.ID, user.ID)
+	rows, err = db.Query(`SELECT * FROM relations WHERE one = ? UNION SELECT * FROM relations WHERE another = ? ORDER BY created_at DESC`, user.ID, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -672,7 +673,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := getCurrentUser(w, r)
-	rows, err := db.Query(`SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC`, user.ID, user.ID)
+	rows, err := db.Query(`SELECT * FROM relations WHERE one = ? UNION SELECT * FROM relations WHERE another = ? ORDER BY created_at DESC`, user.ID, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
