@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -25,15 +26,17 @@ import (
 )
 
 var (
-	db    *sqlx.DB
-	store *sessions.CookieStore
+	db          *sqlx.DB
+	store       *sessions.CookieStore
+	userMap     = map[int]User{}
+	userMapLock = sync.RWMutex{}
 )
 
 type User struct {
-	ID          int
-	AccountName string
-	NickName    string
-	Email       string
+	ID          int    `db:"id"`
+	AccountName string `db:"account_name"`
+	NickName    string `db:"nick_name"`
+	Email       string `db:"email"`
 }
 
 type Profile struct {
@@ -148,6 +151,13 @@ func authenticated(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func getUser(w http.ResponseWriter, userID int) *User {
+	userMapLock.RLock()
+	if u, ok := userMap[userID]; ok {
+		userMapLock.RUnlock()
+		return &u
+	}
+	userMapLock.RUnlock()
+
 	row := db.QueryRow(`SELECT * FROM users WHERE id = ?`, userID)
 	user := User{}
 	err := row.Scan(&user.ID, &user.AccountName, &user.NickName, &user.Email, new(string))
@@ -155,6 +165,10 @@ func getUser(w http.ResponseWriter, userID int) *User {
 		checkErr(ErrContentNotFound)
 	}
 	checkErr(err)
+
+	userMapLock.Lock()
+	userMap[userID] = user
+	userMapLock.Unlock()
 	return &user
 }
 
@@ -777,6 +791,23 @@ func GetInitialize(w http.ResponseWriter, r *http.Request) {
 	db.Exec("DELETE FROM footprints WHERE id > 500000")
 	db.Exec("DELETE FROM entries WHERE id > 500000")
 	db.Exec("DELETE FROM comments WHERE id > 1500000")
+
+	setupUsers()
+}
+
+func setupUsers() {
+	userMapLock.Lock()
+	defer userMapLock.Unlock()
+
+	userMap = map[int]User{}
+
+	var users []User
+	if err := db.Select(&users, "SELECT * FROM users"); err != nil {
+		log.Println(err)
+	}
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
 }
 
 func main() {
@@ -816,6 +847,8 @@ func main() {
 	db.SetConnMaxLifetime(120 * time.Second)
 
 	defer db.Close()
+
+	setupUsers()
 
 	store = sessions.NewCookieStore([]byte(ssecret))
 
