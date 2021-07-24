@@ -12,7 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	_ "net/http/pprof"
+	"github.com/felixge/fgprof"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
@@ -761,6 +762,11 @@ func main() {
 	store = sessions.NewCookieStore([]byte(ssecret))
 
 	r := mux.NewRouter()
+
+	http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 
 	l := r.Path("/login").Subrouter()
 	l.Methods("GET").HandlerFunc(myHandler(GetLogin))
