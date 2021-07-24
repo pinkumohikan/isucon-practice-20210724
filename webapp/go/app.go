@@ -399,12 +399,12 @@ LIMIT 10`, user.ID)
 	entriesOfFriends := make([]Entry, 0, 10)
 	for rows.Next() {
 		var id, userID, private int
-		var body, title, first_row string
+		var body, title, firstRow string
 		var createdAt time.Time
 
-		checkErr(rows.Scan(&id, &userID, &private, &title, &first_row, &body, &createdAt))
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
 
-		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, title, first_row, createdAt})
+		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, title, firstRow, createdAt})
 		if len(entriesOfFriends) >= 10 {
 			break
 		}
@@ -431,12 +431,12 @@ DESC LIMIT 500`, friendIds)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
-		row := db.QueryRow(`SELECT id,user_id,private,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
+		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
-		var body string
+		var body, title, firstRow string
 		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt}
+		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
+		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		if entry.Private {
 			if !permitted(w, r, entry.UserID) {
 				continue
