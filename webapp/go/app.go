@@ -383,7 +383,7 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 
-	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
 		fmt.Println("---entries----")
 		fmt.Println(err)
@@ -515,9 +515,9 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	var query string
 	if permitted(w, r, owner.ID) {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,body,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
 	} else {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,body,created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
 	}
 	rows, err := db.Query(query, owner.ID)
 	if err != sql.ErrNoRows {
@@ -578,9 +578,9 @@ func ListEntries(w http.ResponseWriter, r *http.Request) {
 	owner := getUserFromAccount(w, account)
 	var query string
 	if permitted(w, r, owner.ID) {
-		query = `SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`
+		query = `SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`
 	} else {
-		query = `SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20`
+		query = `SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20`
 	}
 	rows, err := db.Query(query, owner.ID)
 	if err != sql.ErrNoRows {
