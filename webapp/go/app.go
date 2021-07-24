@@ -383,7 +383,7 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 
-	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,body,created_at FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
 		fmt.Println("---entries----")
 		fmt.Println(err)
@@ -399,12 +399,12 @@ LIMIT 10`, user.ID)
 	entriesOfFriends := make([]Entry, 0, 10)
 	for rows.Next() {
 		var id, userID, private int
-		var body, title, firstRow string
+		var body string
 		var createdAt time.Time
 
-		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
+		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
 
-		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, title, firstRow, createdAt})
+		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt})
 		if len(entriesOfFriends) >= 10 {
 			break
 		}
