@@ -412,44 +412,24 @@ LIMIT 10`, user.ID)
 	rows.Close()
 
 	// TODO １０件しか取らないようにする
-	sqlIn, params, err = sqlx.In(`
-SELECT c.*, cu.account_name, cu.nick_name
-FROM comments AS c
-INNER JOIN users AS cu ON cu.id = c.user_id
-WHERE c.user_id IN (?)
-ORDER BY c.created_at
-DESC LIMIT 500`, friendIds)
+	sqlIn, params, err = sqlx.In(`SELECT * FROM comments c
+    JOIN entries e ON c.entry_id = e.id
+ 	WHERE c.user_id IN (?)
+	AND (
+  		e.private = 0
+  	OR
+  		e.private = 1 AND (e.user_id = ? OR e.user_id IN (?))
+	)
+	ORDER BY c.id DESC LIMIT 10`, friendIds, user.ID, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
-	rows, err = db.Query(sqlIn, params...)
+	commentsOfFriends := make([]Comment, 0, 10)
+	err = db.Select(&commentsOfFriends , sqlIn, params...)
 	if err != sql.ErrNoRows {
 		fmt.Println(err)
 		checkErr(err)
 	}
-	commentsOfFriends := make([]Comment, 0, 10)
-	for rows.Next() {
-		c := Comment{}
-		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
-		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE id = ?`, c.EntryID)
-		var id, userID, private int
-		var body, title, firstRow string
-		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
-		if entry.Private {
-			if userID != user.ID  {
-				if _, ok := friendIdUnique[userID]; !ok {
-					continue
-				}
-			}
-		}
-		commentsOfFriends = append(commentsOfFriends, c)
-		if len(commentsOfFriends) >= 10 {
-			break
-		}
-	}
-	rows.Close()
 
 	friendsMap := make(map[int]time.Time)
 	for _, relation := range relationsAnother {
