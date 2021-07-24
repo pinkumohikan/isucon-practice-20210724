@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"errors"
 	"html/template"
@@ -333,10 +334,12 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	relationsAnother :=  []Relation{}
 	err = db.Select(relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
 	if err != nil {
+		fmt.Println(err)
 		checkErr(err)
 	}
-	err = db.Select(relationsAnother, `SELECT * FROM another WHERE one = ?`, user.ID)
+	err = db.Select(relationsAnother, `SELECT * FROM relations WHERE another = ?`, user.ID)
 	if err != nil {
+		fmt.Println(err)
 		checkErr(err)
 	}
 	friendIdUnique := make(map[int]struct{})
@@ -374,10 +377,12 @@ LIMIT 10`, user.ID)
 
 	sqlIn, params, err := sqlx.In(`SELECT * FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
+		fmt.Println(err)
 		checkErr(err)
 	}
 	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
+		fmt.Println(err)
 		checkErr(err)
 	}
 	entriesOfFriends := make([]Entry, 0, 10)
@@ -396,6 +401,7 @@ LIMIT 10`, user.ID)
 	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY id DESC LIMIT 100`, friendIds)
 	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
+		fmt.Println(err)
 		checkErr(err)
 	}
 	commentsOfFriends := make([]Comment, 0, 10)
