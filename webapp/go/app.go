@@ -402,14 +402,13 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
+	// TODO １０件しか取らないようにする
 	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 500`, friendIds)
 	if err != nil {
-		fmt.Println("---comments----")
 		fmt.Println(err)
 	}
 	rows, err = db.Query(sqlIn, params)
 	if err != sql.ErrNoRows {
-		fmt.Println("---comments----")
 		fmt.Println(err)
 		checkErr(err)
 	}
