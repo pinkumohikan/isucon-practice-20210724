@@ -1,6 +1,6 @@
 .PHONY: gogo build stop-services start-services truncate-logs kataribe bench
 
-gogo: stop-services build truncate-logs start-services
+gogo: stop-services build truncate-logs start-services bench
 
 build:
 	make -C webapp/go app
@@ -24,4 +24,4 @@ kataribe:
 	sudo cat /var/log/nginx/access.log | ./kataribe
 
 bench:
-	cd .. & sh bench.sh
+	cd ../ & sh bench.sh
