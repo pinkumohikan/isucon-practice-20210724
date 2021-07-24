@@ -330,15 +330,17 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	rows.Close()
 
 	// 友達のID一覧を作る
-	relationsOne :=  []Relation{}
-	relationsAnother := []Relation{}
+	var relationsOne []Relation
+	var relationsAnother []Relation
 	err = db.Select(&relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
 	if err != nil {
+		fmt.Println("ここまで来た1")
 		fmt.Println(err)
 		checkErr(err)
 	}
 	err = db.Select(&relationsAnother, `SELECT * FROM relations WHERE another = ?`, user.ID)
 	if err != nil {
+		fmt.Println("ここまで来た2")
 		fmt.Println(err)
 		checkErr(err)
 	}
