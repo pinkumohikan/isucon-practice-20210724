@@ -56,13 +56,13 @@ type Entry struct {
 }
 
 type Comment struct {
-	ID          int
-	EntryID     int
-	UserID      int
-	AccountName string
-	NickName    string
-	Comment     string
-	CreatedAt   time.Time
+	ID          int    `db:"id"`
+	EntryID     int    `db:"entry_id"`
+	UserID      int    `db:"user_id"`
+	AccountName string `db:"account_name"`
+	NickName    string `db:"nick_name"`
+	Comment     string `db:"comment"`
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 type Friend struct {
@@ -385,15 +385,11 @@ LIMIT 10`, user.ID)
 
 	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
-		fmt.Println("---entries----")
-		fmt.Println(err)
 		checkErr(err)
 	}
 	rows, err = db.Query(sqlIn, params...)
 
 	if err != sql.ErrNoRows {
-		fmt.Println("---entries sql----")
-		fmt.Println(err)
 		checkErr(err)
 	}
 	entriesOfFriends := make([]Entry, 0, 10)
@@ -412,40 +408,25 @@ LIMIT 10`, user.ID)
 	rows.Close()
 
 	// TODO １０件しか取らないようにする
-	sqlIn, params, err = sqlx.In(`
-SELECT c.*, cu.account_name, cu.nick_name
-FROM comments AS c
-INNER JOIN users AS cu ON cu.id = c.user_id
-WHERE c.user_id IN (?)
-ORDER BY c.created_at
-DESC LIMIT 500`, friendIds)
+	sqlIn, params, err = sqlx.In(`SELECT c.*, cu.account_name, cu.nick_name FROM comments c
+    INNER JOIN users AS cu ON cu.id = c.user_id
+    JOIN entries e ON c.entry_id = e.id
+ 	WHERE c.user_id IN (?)
+	AND (
+  		e.private = 0
+  	OR
+  		e.private = 1 AND (e.user_id = ? OR e.user_id IN (?))
+	)
+	ORDER BY c.id DESC LIMIT 10`, friendIds, user.ID, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
-	rows, err = db.Query(sqlIn, params...)
-	if err != sql.ErrNoRows {
-		fmt.Println(err)
-		checkErr(err)
-	}
 	commentsOfFriends := make([]Comment, 0, 10)
+	rows, err = db.Query(sqlIn, params...)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
-		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE id = ?`, c.EntryID)
-		var id, userID, private int
-		var body, title, firstRow string
-		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
-		if entry.Private {
-			if !permitted(w, r, entry.UserID) {
-				continue
-			}
-		}
 		commentsOfFriends = append(commentsOfFriends, c)
-		if len(commentsOfFriends) >= 10 {
-			break
-		}
 	}
 	rows.Close()
 
