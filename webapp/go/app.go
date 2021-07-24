@@ -855,6 +855,7 @@ func main() {
 
 func checkErr(err error) {
 	if err != nil {
+		log.Println("error", err)
 		panic(err)
 	}
 }
