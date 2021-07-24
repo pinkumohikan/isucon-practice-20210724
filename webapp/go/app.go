@@ -387,7 +387,7 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM relations WHERE one = ? UNION SELECT * FROM relations WHERE another = ? ORDER BY created_at DESC`, user.ID, user.ID)
+	rows, err = db.Query(`(SELECT id,one,another,created_at FROM relations WHERE one = ?) UNION (SELECT id,one,another,created_at FROM relations WHERE another = ?) ORDER BY created_at DESC`, user.ID, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -673,7 +673,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := getCurrentUser(w, r)
-	rows, err := db.Query(`SELECT * FROM relations WHERE one = ? UNION SELECT * FROM relations WHERE another = ? ORDER BY created_at DESC`, user.ID, user.ID)
+	rows, err := db.Query(`(SELECT id,one,another,created_at FROM relations WHERE one = ?) UNION (SELECT id,one,another,created_at FROM relations WHERE another = ?) ORDER BY created_at DESC;`, user.ID, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
