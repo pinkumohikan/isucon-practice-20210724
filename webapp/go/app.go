@@ -515,9 +515,9 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	var query string
 	if permitted(w, r, owner.ID) {
-		query = `SELECT id,user_id,private,body,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
 	} else {
-		query = `SELECT id,user_id,private,body,created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
 	}
 	rows, err := db.Query(query, owner.ID)
 	if err != sql.ErrNoRows {
