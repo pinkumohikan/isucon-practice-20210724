@@ -56,13 +56,13 @@ type Entry struct {
 }
 
 type Comment struct {
-	ID          int
-	EntryID     int
-	UserID      int
-	AccountName string
-	NickName    string
-	Comment     string
-	CreatedAt   time.Time
+	ID          int    `db:"id"`
+	EntryID     int    `db:"entry_id"`
+	UserID      int    `db:"user_id"`
+	AccountName string `db:"account_name"`
+	NickName    string `db:"nick_name"`
+	Comment     string `db:"comment"`
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 type Friend struct {
@@ -385,15 +385,11 @@ LIMIT 10`, user.ID)
 
 	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
-		fmt.Println("---entries----")
-		fmt.Println(err)
 		checkErr(err)
 	}
 	rows, err = db.Query(sqlIn, params...)
 
 	if err != sql.ErrNoRows {
-		fmt.Println("---entries sql----")
-		fmt.Println(err)
 		checkErr(err)
 	}
 	entriesOfFriends := make([]Entry, 0, 10)
@@ -425,11 +421,11 @@ LIMIT 10`, user.ID)
 		fmt.Println(err)
 	}
 	commentsOfFriends := make([]Comment, 0, 10)
-	err = db.Select(&commentsOfFriends , sqlIn, params...)
-	if err != sql.ErrNoRows {
-		fmt.Println("このerror")
-		fmt.Println(err)
-		checkErr(err)
+	rows, err = db.Query(sqlIn, params...)
+	for rows.Next() {
+		c := Comment{}
+		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
+		commentsOfFriends = append(commentsOfFriends, c)
 	}
 
 	friendsMap := make(map[int]time.Time)
