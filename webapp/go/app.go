@@ -269,12 +269,12 @@ func render(w http.ResponseWriter, r *http.Request, status int, file string, dat
 		},
 		"split": strings.Split,
 		"getEntry": func(id int) Entry {
-			row := db.QueryRow(`SELECT id,user_id,private,body,created_at FROM entries WHERE id=?`, id)
+			row := db.QueryRow(`SELECT id,user_id,private,title,first_row,created_at FROM entries WHERE id=?`, id)
 			var entryID, userID, private int
-			var body string
+			var title, firstRow string
 			var createdAt time.Time
-			checkErr(row.Scan(&entryID, &userID, &private, &body, &createdAt))
-			return Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt}
+			checkErr(row.Scan(&entryID, &userID, &private, &title, &firstRow, &createdAt))
+			return Entry{id, userID, private == 1, title, firstRow, createdAt}
 		},
 		"numComments": func(id int) int {
 			row := db.QueryRow(`SELECT COUNT(*) AS c FROM comments WHERE entry_id = ?`, id)
@@ -321,17 +321,17 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 		checkErr(err)
 	}
 
-	rows, err := db.Query(`SELECT id,user_id,private,body,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`, user.ID)
+	rows, err := db.Query(`SELECT id,user_id,private,title,first_row,created_at FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
 	entries := make([]Entry, 0, 5)
 	for rows.Next() {
 		var id, userID, private int
-		var body string
+		var title, firstRow string
 		var createdAt time.Time
-		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		entries = append(entries, Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt})
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &createdAt))
+		entries = append(entries, Entry{id, userID, private == 1, title, firstRow, createdAt})
 	}
 	rows.Close()
 
