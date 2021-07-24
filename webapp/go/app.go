@@ -421,12 +421,12 @@ LIMIT 10`, user.ID)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
-		row := db.QueryRow(`SELECT id,user_id,private,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
+		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
-		var body string
+		var body, title, first_row string
 		var createdAt time.Time
 		checkErr(row.Scan(&id, &userID, &private, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt}
+		entry := Entry{id, userID, private == 1, title, first_row, createdAt}
 		if entry.Private {
 			if !permitted(w, r, entry.UserID) {
 				continue
@@ -438,7 +438,7 @@ LIMIT 10`, user.ID)
 		}
 	}
 	rows.Close()
-	
+
 	friendsMap := make(map[int]time.Time)
 	for _, relation := range relationsAnother {
 		if _, ok := friendsMap[relation.One]; !ok {
