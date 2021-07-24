@@ -418,7 +418,7 @@ FROM
 	comments AS c
 INNER JOIN
 	users AS cu ON cu.id = c.user_id
-LEFT JOIN
+INNER JOIN
 	entries e ON c.entry_id = e.id
 WHERE
 	c.user_id IN (?)
