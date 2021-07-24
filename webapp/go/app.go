@@ -515,9 +515,9 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	var query string
 	if permitted(w, r, owner.ID) {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,title,first_row,created_at  FROM entries WHERE user_id = ? ORDER BY created_at LIMIT 5`
 	} else {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
+		query = `SELECT id,user_id,private,title,first_row,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at LIMIT 5`
 	}
 	rows, err := db.Query(query, owner.ID)
 	if err != sql.ErrNoRows {
@@ -526,10 +526,10 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	entries := make([]Entry, 0, 5)
 	for rows.Next() {
 		var id, userID, private int
-		var body string
+		var title, firstRow string
 		var createdAt time.Time
-		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt}
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &createdAt))
+		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		entries = append(entries, entry)
 	}
 	rows.Close()
@@ -578,9 +578,9 @@ func ListEntries(w http.ResponseWriter, r *http.Request) {
 	owner := getUserFromAccount(w, account)
 	var query string
 	if permitted(w, r, owner.ID) {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`
+		query = `SELECT id,user_id,private,title,first_row,created_at  FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`
 	} else {
-		query = `SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20`
+		query = `SELECT id,user_id,private,title,first_row,created_at  FROM entries WHERE user_id = ? AND private=0 ORDER BY created_at DESC LIMIT 20`
 	}
 	rows, err := db.Query(query, owner.ID)
 	if err != sql.ErrNoRows {
@@ -589,10 +589,10 @@ func ListEntries(w http.ResponseWriter, r *http.Request) {
 	entries := make([]Entry, 0, 20)
 	for rows.Next() {
 		var id, userID, private int
-		var body string
+		var title, firstRow string
 		var createdAt time.Time
-		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		entry := Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt}
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &createdAt))
+		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		entries = append(entries, entry)
 	}
 	rows.Close()
