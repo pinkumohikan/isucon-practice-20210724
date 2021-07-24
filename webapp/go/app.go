@@ -416,9 +416,15 @@ LIMIT 10`, user.ID)
 SELECT c.*, cu.account_name, cu.nick_name
 FROM comments AS c
 INNER JOIN users AS cu ON cu.id = c.user_id
+INNER JOIN entries AS e ON c.entry_id = e.id
 WHERE c.user_id IN (?)
+AND (
+  	e.private = 0
+    OR (e.private = 1 AND (e.user_id = ? OR e.user_id IN (?)))
+  )
 ORDER BY c.created_at
-DESC LIMIT 500`, friendIds)
+DESC LIMIT 10
+`, friendIds, user.ID, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
