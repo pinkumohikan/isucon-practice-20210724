@@ -407,7 +407,7 @@ LIMIT 10`, user.ID)
 	if err != nil {
 		fmt.Println(err)
 	}
-	rows, err = db.Query(sqlIn, params)
+	rows, err = db.Query(sqlIn, params...)
 	if err != sql.ErrNoRows {
 		fmt.Println(err)
 		checkErr(err)
