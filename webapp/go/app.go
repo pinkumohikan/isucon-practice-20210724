@@ -2,9 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"github.com/jmoiron/sqlx"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/felixge/fgprof"
 	"github.com/go-sql-driver/mysql"
@@ -68,9 +69,9 @@ type Friend struct {
 }
 
 type Relation struct {
-	ID int
-	One int
-	Another int
+	ID        int
+	One       int
+	Another   int
 	CreatedAt time.Time `db:"created_at"`
 }
 
@@ -378,7 +379,7 @@ LIMIT 10`, user.ID)
 		commentsForMe = append(commentsForMe, c)
 	}
 
-	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
+	sqlIn, params, err := sqlx.In(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE user_id IN (?) ORDER BY id DESC LIMIT 10`, friendIds)
 	if err != nil {
 		fmt.Println("---entries----")
 		fmt.Println(err)
@@ -394,10 +395,12 @@ LIMIT 10`, user.ID)
 	entriesOfFriends := make([]Entry, 0, 10)
 	for rows.Next() {
 		var id, userID, private int
-		var body string
+		var body, title, first_row string
 		var createdAt time.Time
-		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt})
+
+		checkErr(rows.Scan(&id, &userID, &private, &title, &first_row, &body, &createdAt))
+
+		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, title, first_row, createdAt})
 		if len(entriesOfFriends) >= 10 {
 			break
 		}
