@@ -56,11 +56,13 @@ type Entry struct {
 }
 
 type Comment struct {
-	ID        int
-	EntryID   int
-	UserID    int
-	Comment   string
-	CreatedAt time.Time
+	ID          int
+	EntryID     int
+	UserID      int
+	AccountName string
+	NickName    string
+	Comment     string
+	CreatedAt   time.Time
 }
 
 type Friend struct {
@@ -76,10 +78,12 @@ type Relation struct {
 }
 
 type Footprint struct {
-	UserID    int
-	OwnerID   int
-	CreatedAt time.Time
-	Updated   time.Time
+	UserID           int
+	OwnerID          int
+	OwnerAccountName string
+	OwnerNickName    string
+	CreatedAt        time.Time
+	Updated          time.Time
 }
 
 var prefs = []string{"未入力",
@@ -408,7 +412,13 @@ LIMIT 10`, user.ID)
 	rows.Close()
 
 	// TODO １０件しか取らないようにする
-	sqlIn, params, err = sqlx.In(`SELECT * FROM comments WHERE user_id IN (?) ORDER BY created_at DESC LIMIT 500`, friendIds)
+	sqlIn, params, err = sqlx.In(`
+SELECT c.*, cu.account_name, cu.nick_name
+FROM comments AS c
+INNER JOIN users AS cu ON cu.id = c.user_id
+WHERE c.user_id IN (?)
+ORDER BY c.created_at
+DESC LIMIT 500`, friendIds)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -420,8 +430,8 @@ LIMIT 10`, user.ID)
 	commentsOfFriends := make([]Comment, 0, 10)
 	for rows.Next() {
 		c := Comment{}
-		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
-		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at  FROM entries WHERE id = ?`, c.EntryID)
+		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt, &c.AccountName, &c.NickName))
+		row := db.QueryRow(`SELECT id,user_id,private,title,first_row,body,created_at FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
 		var body, title, first_row string
 		var createdAt time.Time
@@ -457,11 +467,13 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT user_id, owner_id, DATE(created_at) AS date, MAX(created_at) AS updated
-FROM footprints
-WHERE user_id = ?
-GROUP BY user_id, owner_id, DATE(created_at)
-ORDER BY updated DESC
+	rows, err = db.Query(`
+SELECT o.account_name, o.nick_name, DATE(f.created_at) AS date
+FROM footprints AS f
+INNER JOIN users AS o ON o.id = f.owner_id
+WHERE f.user_id = ?
+GROUP BY f.user_id, f.owner_id, date
+ORDER BY MAX(f.created_at) DESC
 LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
@@ -469,7 +481,7 @@ LIMIT 10`, user.ID)
 	footprints := make([]Footprint, 0, 10)
 	for rows.Next() {
 		fp := Footprint{}
-		checkErr(rows.Scan(&fp.UserID, &fp.OwnerID, &fp.CreatedAt, &fp.Updated))
+		checkErr(rows.Scan(&fp.OwnerAccountName, &fp.OwnerNickName, &fp.CreatedAt))
 		footprints = append(footprints, fp)
 	}
 	rows.Close()
