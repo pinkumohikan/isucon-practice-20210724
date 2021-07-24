@@ -528,7 +528,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 		var id, userID, private int
 		var body, title, firstRow string
 		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
+		checkErr(rows.Scan(&id, &userID, &private, &title, &firstRow, &body, &createdAt))
 		entry := Entry{id, userID, private == 1, title, firstRow, createdAt}
 		entries = append(entries, entry)
 	}
