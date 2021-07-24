@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"errors"
 	"html/template"
 	"log"
