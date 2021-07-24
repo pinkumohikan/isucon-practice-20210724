@@ -427,6 +427,7 @@ LIMIT 10`, user.ID)
 	commentsOfFriends := make([]Comment, 0, 10)
 	err = db.Select(&commentsOfFriends , sqlIn, params...)
 	if err != sql.ErrNoRows {
+		fmt.Println("このerror")
 		fmt.Println(err)
 		checkErr(err)
 	}
