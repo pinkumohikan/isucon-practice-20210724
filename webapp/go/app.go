@@ -331,14 +331,16 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 
 	// 友達のID一覧を作る
 	relationsOne :=  []Relation{}
-	relationsAnother :=  []Relation{}
+	relationsAnother := []Relation{}
 	err = db.Select(relationsOne, `SELECT * FROM relations WHERE one = ?`, user.ID)
 	if err != nil {
+		fmt.Println('1')
 		fmt.Println(err)
 		checkErr(err)
 	}
 	err = db.Select(relationsAnother, `SELECT * FROM relations WHERE another = ?`, user.ID)
 	if err != nil {
+		fmt.Println('2')
 		fmt.Println(err)
 		checkErr(err)
 	}
@@ -366,6 +368,8 @@ WHERE e.user_id = ?
 ORDER BY c.created_at DESC
 LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
+		fmt.Println('3')
+		fmt.Println(err)
 		checkErr(err)
 	}
 	commentsForMe := make([]Comment, 0, 10)
