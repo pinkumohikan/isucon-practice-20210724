@@ -435,7 +435,7 @@ DESC LIMIT 500`, friendIds)
 		var id, userID, private int
 		var body, title, first_row string
 		var createdAt time.Time
-		checkErr(row.Scan(&id, &userID, &private, &body, &createdAt))
+		checkErr(row.Scan(&id, &userID, &private, &title, &first_row, &body, &createdAt))
 		entry := Entry{id, userID, private == 1, title, first_row, createdAt}
 		if entry.Private {
 			if !permitted(w, r, entry.UserID) {
