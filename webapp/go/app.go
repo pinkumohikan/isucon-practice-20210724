@@ -416,9 +416,9 @@ LIMIT 10`, user.ID)
 SELECT c.*, cu.account_name, cu.nick_name
 FROM comments AS c
 INNER JOIN users AS cu ON cu.id = c.user_id
-WHERE c.user_id IN (?)
+WHERE c.user_id IN (SELECT another FROM relations WHERE one = ? UNION SELECT one FROM relations WHERE another = ?)
 ORDER BY c.created_at
-DESC LIMIT 500`, friendIds)
+DESC LIMIT 500`, user.ID, user.ID)
 	if err != nil {
 		fmt.Println(err)
 	}
